@@ -238,7 +238,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--max_steps',
         type=int,
-        default=2000,
+        default=12000,
         help='Number of steps to run trainer.'
     )
     parser.add_argument(
@@ -253,7 +253,7 @@ if __name__ == '__main__':
         default=32,
         help='Number of units in hidden layer 2.'
     )
-    #batch_size 为什么是100 ->表示一步处理多少个
+    #batch_size
     parser.add_argument(
         '--batch_size',
         type=int,

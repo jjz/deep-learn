@@ -92,9 +92,9 @@ keep_prob = tf.placeholder(tf.float32)
 def crack_auth_cnn(w_alpha=0.01, b_alpha=0.1):
     x = tf.reshape(X, shape=[-1, IMAGE_HEIGHT, IMAGE_WIDTH, 1])
 
-    w_cl = tf.Variable(w_alpha * tf.random_normal([3, 3, 1, 32]))
-    b_cl = tf.Variable(b_alpha * tf.random_normal([32]))
-    conv1 = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(x, w_cl, strides=[1, 1, 1, 1], padding='SAME'), b_cl))
+    w_c1 = tf.Variable(w_alpha * tf.random_normal([3, 3, 1, 32]))
+    b_c1 = tf.Variable(b_alpha * tf.random_normal([32]))
+    conv1 = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(x, w_c1, strides=[1, 1, 1, 1], padding='SAME'), b_c1))
     conv1 = tf.nn.max_pool(conv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
     conv1 = tf.nn.dropout(conv1, keep_prob)
 
@@ -110,6 +110,7 @@ def crack_auth_cnn(w_alpha=0.01, b_alpha=0.1):
     conv3 = tf.nn.max_pool(conv3, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
     conv3 = tf.nn.dropout(conv3, keep_prob)
 
+    # Fully connected layer
     w_d = tf.Variable(w_alpha * tf.random_normal([8 * 32 * 40, 1024]))
     b_d = tf.Variable(b_alpha * tf.random_normal([1024]))
     dense = tf.reshape(conv3, [-1, w_d.get_shape().as_list()[0]])
@@ -119,33 +120,42 @@ def crack_auth_cnn(w_alpha=0.01, b_alpha=0.1):
     w_out = tf.Variable(w_alpha * tf.random_normal([1024, MAX_CAPTCHA * CHAR_SET_LEN]))
     b_out = tf.Variable(b_alpha * tf.random_normal([MAX_CAPTCHA * CHAR_SET_LEN]))
     out = tf.add(tf.matmul(dense, w_out), b_out)
+    # out = tf.nn.softmax(out)
     return out
 
 
 def train_crack_auth_cnn():
     output = crack_auth_cnn()
-    loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=output, logits=Y))
+    loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=output, labels=Y))
+
     optimizer = tf.train.AdamOptimizer(learning_rate=0.001).minimize(loss)
+
     predict = tf.reshape(output, [-1, MAX_CAPTCHA, CHAR_SET_LEN])
     max_idx_p = tf.argmax(predict, 2)
-    max_idx_1 = tf.argmax(tf.reshape(Y, [-1, MAX_CAPTCHA, CHAR_SET_LEN]), 2)
-    correct_pred = tf.equal(max_idx_p, max_idx_1)
+    max_idx_l = tf.argmax(tf.reshape(Y, [-1, MAX_CAPTCHA, CHAR_SET_LEN]), 2)
+    correct_pred = tf.equal(max_idx_p, max_idx_l)
     accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+
     saver = tf.train.Saver()
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        setp = 0
+
+        step = 0
         while True:
             batch_x, batch_y = get_next_batch(64)
             _, loss_ = sess.run([optimizer, loss], feed_dict={X: batch_x, Y: batch_y, keep_prob: 0.75})
-            print("loss:{},{}".format(setp, loss_))
-            if setp % 100 == 0:
+            print("loss:{},{}".format(step, loss_))
+
+            if step % 100 == 0:
                 batch_x_test, batch_y_test = get_next_batch(100)
                 acc = sess.run(accuracy, feed_dict={X: batch_x_test, Y: batch_y_test, keep_prob: 1.})
-                print("acc:{},{}".format(setp, acc))
+                print("acc:{},{}".format(step, acc))
+
                 if acc > 0.5:
-                    saver.save(sess, "crack_capcha.model", global_step=setp)
-            setp += 1
+                    saver.save(sess, "crack_capcha.model", global_step=step)
+                    break
+
+            step += 1
 
 
 train_crack_auth_cnn()

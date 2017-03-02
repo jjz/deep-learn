@@ -10,7 +10,7 @@ IMAGE_WIDTH = 160
 MAX_CAPTCHA = len(auth)
 
 
-def conver2gray(img):
+def convert2gray(img):
     if len(img.shape) > 2:
         gray = numpy.mean(img, -1)
         return gray
@@ -25,7 +25,7 @@ CHAR_SET_LEN = len(char_set)
 def text2vec(text):
     text_len = len(text)
     if text_len > MAX_CAPTCHA:
-        raise ValueError('legth >4')
+        raise ValueError('len >4')
     vector = numpy.zeros(MAX_CAPTCHA * CHAR_SET_LEN)
     for i, c in enumerate(text):
         idx = i * CHAR_SET_LEN + char2pos(c)
@@ -43,20 +43,21 @@ def char2pos(c):
         if k > 35:
             k = ord(c) - 61
             if k > 61:
-                raise ValueError('no map')
+                raise ValueError('No Map')
     return k
-
 
 def vec2text(vec):
     char_pos = vec.nonzero()[0]
-    text = []
+    text=[]
     for i, c in enumerate(char_pos):
-        char_at_pos = i
+        char_at_pos = i #c/63
         char_idx = c % CHAR_SET_LEN
         if char_idx < 10:
             char_code = char_idx + ord('0')
-        elif char_idx < 36:
+        elif char_idx <36:
             char_code = char_idx - 10 + ord('A')
+        elif char_idx < 62:
+            char_code = char_idx-  36 + ord('a')
         elif char_idx == 62:
             char_code = ord('_')
         else:
@@ -77,7 +78,7 @@ def get_next_batch(batch_size=128):
     batch_y = numpy.zeros([batch_size, MAX_CAPTCHA * CHAR_SET_LEN])
     for i in range(batch_size):
         text, img = wrap_gen_auth_text_and_image()
-        img = conver2gray(img)
+        img = convert2gray(img)
 
         batch_x[i, :] = img.flatten() / 255
         batch_y[i, :] = text2vec(text)
@@ -128,7 +129,7 @@ def train_crack_auth_cnn():
     output = crack_auth_cnn()
     loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=output, labels=Y))
 
-    optimizer = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss)
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.001).minimize(loss)
 
     predict = tf.reshape(output, [-1, MAX_CAPTCHA, CHAR_SET_LEN])
     max_idx_p = tf.argmax(predict, 2)
@@ -144,9 +145,10 @@ def train_crack_auth_cnn():
         while True:
             batch_x, batch_y = get_next_batch(64)
             _, loss_ = sess.run([optimizer, loss], feed_dict={X: batch_x, Y: batch_y, keep_prob: 0.75})
-            print("loss:{},{}".format(step, loss_))
-
             if step % 20 == 0:
+                print("loss:{},{}".format(step, loss_))
+
+            if step % 100 == 0:
                 batch_x_test, batch_y_test = get_next_batch(100)
                 acc = sess.run(accuracy, feed_dict={X: batch_x_test, Y: batch_y_test, keep_prob: 1.})
                 print("acc:{},{}".format(step, acc))

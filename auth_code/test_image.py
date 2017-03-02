@@ -13,7 +13,7 @@ def check_auth(auth_image):
 
 
 text, image = gen_auth_image()
-image = conver2gray(image)
+image = convert2gray(image)
 image = image.flatten() / 255
 predict_text = check_auth(image)
 print ("auth:{} train:{}".format(text, predict_text))

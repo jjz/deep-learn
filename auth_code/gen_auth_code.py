@@ -19,12 +19,13 @@ def random_captcha_text(char_set=number + alphabet + ALPHABET, captcha_size=4):
     return captcha_text
 
 
-def gen_auth_image():
+def gen_auth_image(path=None):
     image = ImageCaptcha()
     auth_text = random_captcha_text()
     auth_text = ''.join(auth_text)
     captcha = image.generate(auth_text)
-    #image.write(auth_text, auth_text + ".jpg")
+    if path:
+        image.write(auth_text, path + "/" + auth_text + ".jpg")
     auth_image = Image.open(captcha)
     auth_image = numpy.array(auth_image)
     return auth_text, auth_image

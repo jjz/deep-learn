@@ -77,9 +77,9 @@ def get_next_batch(batch_size=128):
     batch_y = numpy.zeros([batch_size, MAX_CAPTCHA * CHAR_SET_LEN])
     for i in range(batch_size):
         text, img = wrap_gen_auth_text_and_image()
-        image = conver2gray(img)
+        img = conver2gray(img)
 
-        batch_x[i, :] = image.flatten()
+        batch_x[i, :] = img.flatten() / 255
         batch_y[i, :] = text2vec(text)
     return batch_x, batch_y
 
@@ -128,7 +128,7 @@ def train_crack_auth_cnn():
     output = crack_auth_cnn()
     loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=output, labels=Y))
 
-    optimizer = tf.train.AdamOptimizer(learning_rate=0.001).minimize(loss)
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.01).minimize(loss)
 
     predict = tf.reshape(output, [-1, MAX_CAPTCHA, CHAR_SET_LEN])
     max_idx_p = tf.argmax(predict, 2)
@@ -146,7 +146,7 @@ def train_crack_auth_cnn():
             _, loss_ = sess.run([optimizer, loss], feed_dict={X: batch_x, Y: batch_y, keep_prob: 0.75})
             print("loss:{},{}".format(step, loss_))
 
-            if step % 100 == 0:
+            if step % 20 == 0:
                 batch_x_test, batch_y_test = get_next_batch(100)
                 acc = sess.run(accuracy, feed_dict={X: batch_x_test, Y: batch_y_test, keep_prob: 1.})
                 print("acc:{},{}".format(step, acc))

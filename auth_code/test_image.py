@@ -1,4 +1,3 @@
-from gen_auth_code import *
 from model import *
 
 

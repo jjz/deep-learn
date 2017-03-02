@@ -94,7 +94,7 @@ def crack_auth_cnn(w_alpha=0.01, b_alpha=0.1):
 
     w_cl = tf.Variable(w_alpha * tf.random_normal([3, 3, 1, 32]))
     b_cl = tf.Variable(b_alpha * tf.random_normal([32]))
-    conv1 = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(x, w_cl, strides=[1, 1, 1, ], padding='SAME'), b_cl))
+    conv1 = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(x, w_cl, strides=[1, 1, 1, 1], padding='SAME'), b_cl))
     conv1 = tf.nn.max_pool(conv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
     conv1 = tf.nn.dropout(conv1, keep_prob)
 
@@ -124,7 +124,7 @@ def crack_auth_cnn(w_alpha=0.01, b_alpha=0.1):
 
 def train_crack_auth_cnn():
     output = crack_auth_cnn()
-    loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(output, Y))
+    loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=output, logits=Y))
     optimizer = tf.train.AdamOptimizer(learning_rate=0.001).minimize(loss)
     predict = tf.reshape(output, [-1, MAX_CAPTCHA, CHAR_SET_LEN])
     max_idx_p = tf.argmax(predict, 2)
@@ -138,14 +138,14 @@ def train_crack_auth_cnn():
         while True:
             batch_x, batch_y = get_next_batch(64)
             _, loss_ = sess.run([optimizer, loss], feed_dict={X: batch_x, Y: batch_y, keep_prob: 0.75})
-            print(setp, loss_)
-            if setp%100==0:
-                batch_x_test,batch_y_test=get_next_batch(100)
-                acc=sess.run(accuracy,feed_dict={X:batch_x_test,Y:batch_y_test,keep_prob:1.})
-                print(setp,acc)
-                if acc>0.5:
-                    saver.save(sess,"crack_capcha.model",global_step=setp)
-            setp+=1
+            print("loss:{},{}".format(setp, loss_))
+            if setp % 100 == 0:
+                batch_x_test, batch_y_test = get_next_batch(100)
+                acc = sess.run(accuracy, feed_dict={X: batch_x_test, Y: batch_y_test, keep_prob: 1.})
+                print("acc:{},{}".format(setp, acc))
+                if acc > 0.5:
+                    saver.save(sess, "crack_capcha.model", global_step=setp)
+            setp += 1
 
 
 train_crack_auth_cnn()

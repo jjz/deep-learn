@@ -1,6 +1,5 @@
-import tensorflow as tf
-from model import *
 from gen_auth_code import *
+from model import *
 
 
 def check_auth(auth_image):

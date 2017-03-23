@@ -3,3 +3,4 @@
 .DS_Store
 auth_code/data
 auth_code/test
+train.log
